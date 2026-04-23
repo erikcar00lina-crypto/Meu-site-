@@ -20,7 +20,6 @@ body {
   bottom: 80px;
   width: 50px;
   height: 60px;
-  background: purple;
   border-radius: 10px;
   transition: left 0.2s;
 }
@@ -40,7 +39,7 @@ body {
   width: 100%;
 }
 
-/* BOTÕES */
+/* CONTROLES */
 #controls {
   position: fixed;
   bottom: 20px;
@@ -48,17 +47,26 @@ body {
 }
 
 button {
-  padding: 15px;
-  margin: 10px;
-  font-size: 20px;
+  padding: 12px;
+  margin: 6px;
+}
+
+/* LOJA */
+#loja {
+  display:none;
+  position:fixed;
+  top:10%;
+  width:100%;
+  background:black;
+  padding:10px;
 }
 
 /* GAME OVER */
 #gameover {
-  position: fixed;
-  top: 30%;
-  width: 100%;
-  display: none;
+  display:none;
+  position:fixed;
+  top:30%;
+  width:100%;
 }
 </style>
 </head>
@@ -66,30 +74,60 @@ button {
 <body>
 
 <div id="hud">
-❤️ Vida: <span id="vida">3</span> |
-⏳ Domínio: <span id="cd">Pronto</span> |
-🏆 Pontos: <span id="score">0</span>
+❤️ <span id="vida">3</span> |
+⏳ <span id="cd">Pronto</span> |
+🏆 <span id="score">0</span>
+<br>
+<button onclick="abrirLoja()">🛒 Loja</button>
 </div>
 
 <div id="player"></div>
 
 <div id="controls">
-  <button onclick="moveLeft()">⬅️</button>
-  <button onclick="dominio()" id="btnDom">⚡</button>
-  <button onclick="moveRight()">➡️</button>
+<button onclick="moveLeft()">⬅️</button>
+<button onclick="dominio()" id="btnDom">⚡</button>
+<button onclick="moveRight()">➡️</button>
+</div>
+
+<div id="loja">
+<h2>🛒 Loja</h2>
+
+<p>🧍 Skin Azul - 50</p>
+<button onclick="comprarSkin('blue',50)">Comprar</button>
+
+<p>🔥 Skin Vermelha - 100</p>
+<button onclick="comprarSkin('red',100)">Comprar</button>
+
+<p>⚡ Domínio Forte - 150</p>
+<button onclick="comprarPoder(150)">Comprar</button>
+
+<br>
+<button onclick="fecharLoja()">Fechar</button>
 </div>
 
 <div id="gameover">
-  <h1>💀 Game Over</h1>
-  <p>Pontos: <span id="finalScore"></span></p>
-  <p>Recorde: <span id="record"></span></p>
-  <button onclick="location.reload()">Jogar novamente</button>
+<h1>💀 Game Over</h1>
+<p>Pontos: <span id="finalScore"></span></p>
+<p>Recorde: <span id="record"></span></p>
+<button onclick="location.reload()">Reiniciar</button>
 </div>
 
 <script>
 let player = document.getElementById("player");
+
 let vida = 3;
 let score = 0;
+let cd = false;
+
+/* salvar */
+let skin = localStorage.getItem("skin") || "purple";
+let poderForte = localStorage.getItem("poder") === "true";
+
+/* aplicar skin */
+function aplicarSkin(){
+  player.style.background = skin;
+}
+aplicarSkin();
 
 /* pistas */
 let lanes = [window.innerWidth*0.2, window.innerWidth*0.5, window.innerWidth*0.8];
@@ -103,13 +141,13 @@ updatePlayer();
 function moveLeft(){ if(laneIndex>0) laneIndex--; updatePlayer(); }
 function moveRight(){ if(laneIndex<2) laneIndex++; updatePlayer(); }
 
-/* SCORE */
+/* score */
 setInterval(()=>{
   score++;
   document.getElementById("score").innerText = score;
-}, 1000);
+},1000);
 
-/* OBSTÁCULOS (mais rápido) */
+/* obstáculos */
 setInterval(()=>{
   let o = document.createElement("div");
   o.className = "obstaculo";
@@ -123,7 +161,7 @@ setInterval(()=>{
 
   let fall = setInterval(()=>{
     let top = parseInt(o.style.top);
-    o.style.top = (top + 7) + "px"; // velocidade aumentada
+    o.style.top = (top + 7) + "px";
 
     if(top > window.innerHeight - 140 && lane === laneIndex){
       vida--;
@@ -131,9 +169,7 @@ setInterval(()=>{
       o.remove();
       clearInterval(fall);
 
-      if(vida <= 0){
-        gameOver();
-      }
+      if(vida <= 0) gameOver();
     }
 
     if(top > window.innerHeight){
@@ -141,13 +177,11 @@ setInterval(()=>{
       clearInterval(fall);
     }
 
-  }, 25);
+  },25);
 
-}, 1000);
+},1000);
 
-/* DOMÍNIO COM COOLDOWN */
-let cd = false;
-
+/* domínio */
 function dominio(){
   if(cd) return;
 
@@ -155,41 +189,60 @@ function dominio(){
   document.getElementById("btnDom").disabled = true;
 
   document.body.style.background = "purple";
-  document.querySelectorAll(".obstaculo").forEach(o=>o.remove());
 
-  setTimeout(()=>{
-    document.body.style.background = "black";
-  },300);
+  document.querySelectorAll(".obstaculo").forEach(o=>{
+    if(poderForte) o.style.background="cyan";
+    o.remove();
+  });
+
+  setTimeout(()=>document.body.style.background="black",300);
 
   let tempo = 30;
   let cdText = document.getElementById("cd");
 
   let timer = setInterval(()=>{
     tempo--;
-    cdText.innerText = tempo + "s";
+    cdText.innerText = tempo+"s";
 
-    if(tempo <= 0){
+    if(tempo<=0){
       clearInterval(timer);
-      cd = false;
-      cdText.innerText = "Pronto";
-      document.getElementById("btnDom").disabled = false;
+      cd=false;
+      cdText.innerText="Pronto";
+      document.getElementById("btnDom").disabled=false;
     }
   },1000);
 }
 
-/* GAME OVER + RECORD */
+/* loja */
+function abrirLoja(){ document.getElementById("loja").style.display="block"; }
+function fecharLoja(){ document.getElementById("loja").style.display="none"; }
+
+function comprarSkin(tipo,preco){
+  if(score<preco){ alert("Sem pontos"); return; }
+  score-=preco;
+  skin=tipo;
+  localStorage.setItem("skin",tipo);
+  aplicarSkin();
+}
+
+function comprarPoder(preco){
+  if(score<preco){ alert("Sem pontos"); return; }
+  score-=preco;
+  poderForte=true;
+  localStorage.setItem("poder",true);
+}
+
+/* game over */
 function gameOver(){
-  document.getElementById("gameover").style.display = "block";
-  document.getElementById("finalScore").innerText = score;
+  document.getElementById("gameover").style.display="block";
+  document.getElementById("finalScore").innerText=score;
 
   let record = localStorage.getItem("record") || 0;
-
-  if(score > record){
-    localStorage.setItem("record", score);
-    record = score;
+  if(score>record){
+    localStorage.setItem("record",score);
+    record=score;
   }
-
-  document.getElementById("record").innerText = record;
+  document.getElementById("record").innerText=record;
 }
 </script>
 

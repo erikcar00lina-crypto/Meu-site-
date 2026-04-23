@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Reino do Autor Absoluto</title>
+  <style>
+    body {
+      margin: 0;
+      background: black;
+      color: white;
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
+
+    h1 {
+      margin-top: 20%;
+      font-size: 3em;
+      animation: glow 2s infinite alternate;
+    }
+
+    p {
+      opacity: 0.7;
+    }
+
+    @keyframes glow {
+      from { text-shadow: 0 0 10px purple; }
+      to { text-shadow: 0 0 25px cyan; }
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background: purple;
+      border: none;
+      color: white;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    button:hover {
+      background: cyan;
+      color: black;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>絶対的作者の王国</h1>
+  <p>Você entrou no domínio do autor...</p>
+
+  <button onclick="reescrever()">Reescrever Realidade</button>
+
+  <script>
+    function reescrever() {
+      document.body.innerHTML = `
+        <h1>REALIDADE ALTERADA</h1>
+        <p>Você não deveria estar aqui.</p>
+      `;
+      document.body.style.background = "darkred";
+    }
+  </script>
+
+</body>
+</html>

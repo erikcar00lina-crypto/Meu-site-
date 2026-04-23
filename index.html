@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Runner 3 Pistas</title>
+<title>Runner Lendário</title>
 
 <style>
 body {
@@ -11,6 +11,7 @@ body {
   overflow: hidden;
   color: white;
   text-align: center;
+  font-family: Arial;
 }
 
 /* PLAYER */
@@ -39,7 +40,7 @@ body {
   width: 100%;
 }
 
-/* CONTROLES */
+/* BOTÕES */
 #controls {
   position: fixed;
   bottom: 20px;
@@ -51,47 +52,65 @@ button {
   margin: 10px;
   font-size: 20px;
 }
+
+/* GAME OVER */
+#gameover {
+  position: fixed;
+  top: 30%;
+  width: 100%;
+  display: none;
+}
 </style>
 </head>
 
 <body>
 
-<div id="hud">❤️ Vida: <span id="vida">3</span></div>
+<div id="hud">
+❤️ Vida: <span id="vida">3</span> |
+⏳ Domínio: <span id="cd">Pronto</span> |
+🏆 Pontos: <span id="score">0</span>
+</div>
 
 <div id="player"></div>
 
 <div id="controls">
   <button onclick="moveLeft()">⬅️</button>
-  <button onclick="dominio()">⚡</button>
+  <button onclick="dominio()" id="btnDom">⚡</button>
   <button onclick="moveRight()">➡️</button>
+</div>
+
+<div id="gameover">
+  <h1>💀 Game Over</h1>
+  <p>Pontos: <span id="finalScore"></span></p>
+  <p>Recorde: <span id="record"></span></p>
+  <button onclick="location.reload()">Jogar novamente</button>
 </div>
 
 <script>
 let player = document.getElementById("player");
 let vida = 3;
+let score = 0;
 
-/* pistas fixas */
+/* pistas */
 let lanes = [window.innerWidth*0.2, window.innerWidth*0.5, window.innerWidth*0.8];
 let laneIndex = 1;
 
-function updatePlayer() {
+function updatePlayer(){
   player.style.left = lanes[laneIndex] + "px";
 }
-
 updatePlayer();
 
-function moveLeft() {
-  if(laneIndex > 0) laneIndex--;
-  updatePlayer();
-}
+function moveLeft(){ if(laneIndex>0) laneIndex--; updatePlayer(); }
+function moveRight(){ if(laneIndex<2) laneIndex++; updatePlayer(); }
 
-function moveRight() {
-  if(laneIndex < 2) laneIndex++;
-  updatePlayer();
-}
+/* SCORE */
+setInterval(()=>{
+  score++;
+  document.getElementById("score").innerText = score;
+}, 1000);
 
-/* OBSTÁCULOS */
-setInterval(() => {
+/* OBSTÁCULOS (mais rápido) */
+setInterval(()=>{
   let o = document.createElement("div");
   o.className = "obstaculo";
 
@@ -102,11 +121,10 @@ setInterval(() => {
 
   document.body.appendChild(o);
 
-  let fall = setInterval(() => {
+  let fall = setInterval(()=>{
     let top = parseInt(o.style.top);
-    o.style.top = (top + 5) + "px";
+    o.style.top = (top + 7) + "px"; // velocidade aumentada
 
-    /* colisão */
     if(top > window.innerHeight - 140 && lane === laneIndex){
       vida--;
       document.getElementById("vida").innerText = vida;
@@ -114,8 +132,7 @@ setInterval(() => {
       clearInterval(fall);
 
       if(vida <= 0){
-        alert("💀 Game Over");
-        location.reload();
+        gameOver();
       }
     }
 
@@ -124,18 +141,55 @@ setInterval(() => {
       clearInterval(fall);
     }
 
-  }, 30);
+  }, 25);
 
-}, 1200);
+}, 1000);
 
-/* DOMÍNIO */
+/* DOMÍNIO COM COOLDOWN */
+let cd = false;
+
 function dominio(){
+  if(cd) return;
+
+  cd = true;
+  document.getElementById("btnDom").disabled = true;
+
   document.body.style.background = "purple";
-  document.querySelectorAll(".obstaculo").forEach(o => o.remove());
+  document.querySelectorAll(".obstaculo").forEach(o=>o.remove());
 
   setTimeout(()=>{
     document.body.style.background = "black";
   },300);
+
+  let tempo = 30;
+  let cdText = document.getElementById("cd");
+
+  let timer = setInterval(()=>{
+    tempo--;
+    cdText.innerText = tempo + "s";
+
+    if(tempo <= 0){
+      clearInterval(timer);
+      cd = false;
+      cdText.innerText = "Pronto";
+      document.getElementById("btnDom").disabled = false;
+    }
+  },1000);
+}
+
+/* GAME OVER + RECORD */
+function gameOver(){
+  document.getElementById("gameover").style.display = "block";
+  document.getElementById("finalScore").innerText = score;
+
+  let record = localStorage.getItem("record") || 0;
+
+  if(score > record){
+    localStorage.setItem("record", score);
+    record = score;
+  }
+
+  document.getElementById("record").innerText = record;
 }
 </script>
 

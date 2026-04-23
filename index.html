@@ -2,16 +2,37 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Modo Lendário</title>
+<title>Runner do Autor Absoluto</title>
 
 <style>
 body {
   margin: 0;
-  background: radial-gradient(circle, #000, #020012);
+  background: black;
+  overflow: hidden;
   color: white;
   font-family: Arial;
   text-align: center;
-  overflow: hidden;
+}
+
+/* PLAYER */
+#player {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  width: 50px;
+  height: 50px;
+  background: purple;
+  transform: translateX(-50%);
+  border-radius: 10px;
+}
+
+/* OBSTÁCULOS */
+.obstaculo {
+  position: absolute;
+  top: 0;
+  width: 50px;
+  height: 50px;
+  background: red;
 }
 
 /* HUD */
@@ -20,210 +41,73 @@ body {
   top: 10px;
   width: 100%;
 }
-
-.bar {
-  width: 80%;
-  height: 18px;
-  background: #222;
-  margin: 5px auto;
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.hp { background: linear-gradient(to right, red, orange); }
-.mana { background: linear-gradient(to right, purple, cyan); }
-
-.fill {
-  height: 100%;
-  width: 100%;
-}
-
-/* BOTÕES */
-button {
-  margin: 8px;
-  padding: 12px 18px;
-  background: purple;
-  border: none;
-  color: white;
-  cursor: pointer;
-}
-button:disabled {
-  opacity: 0.4;
-}
-button:hover {
-  background: cyan;
-  color: black;
-}
-
-/* ANIMAÇÕES */
-@keyframes shake {
-  0% { transform: translate(0px); }
-  25% { transform: translate(5px,-5px); }
-  50% { transform: translate(-5px,5px); }
-  75% { transform: translate(5px,5px); }
-}
-
-#aura {
-  position: fixed;
-  width: 250px;
-  height: 250px;
-  border-radius: 50%;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: radial-gradient(circle, purple, transparent);
-  animation: pulse 1s infinite alternate;
-}
-
-@keyframes pulse {
-  from { opacity: 0.3; transform: scale(1); }
-  to { opacity: 0.9; transform: scale(1.6); }
-}
-
-/* partículas */
-.particle {
-  position: fixed;
-  width: 5px;
-  height: 5px;
-  background: cyan;
-  border-radius: 50%;
-  animation: float 2s linear forwards;
-}
-
-@keyframes float {
-  to {
-    transform: translateY(-200px);
-    opacity: 0;
-  }
-}
 </style>
 </head>
 
 <body>
 
-<div id="hud">
-  ❤️ Player
-  <div class="bar"><div id="hpP" class="fill hp"></div></div>
+<div id="hud">❤️ Vida: <span id="vida">3</span></div>
 
-  ⚡ Energia
-  <div class="bar"><div id="manaP" class="fill mana"></div></div>
-
-  💀 Inimigo
-  <div class="bar"><div id="hpE" class="fill hp"></div></div>
-</div>
-
-<h1>絶対的作者の王国</h1>
-<p>Batalha Lendária iniciada...</p>
-
-<button onclick="start()">Começar</button>
-
-<div id="aura" style="display:none;"></div>
-
-<audio id="bgm" loop>
-  <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3">
-</audio>
+<div id="player"></div>
 
 <script>
-let hpP=100, hpE=100, mana=100;
-let cdDominio=false;
+let player = document.getElementById("player");
+let vida = 3;
+let pos = window.innerWidth / 2;
 
-function update(){
-  document.getElementById("hpP").style.width = hpP+"%";
-  document.getElementById("hpE").style.width = hpE+"%";
-  document.getElementById("manaP").style.width = mana+"%";
-}
+document.addEventListener("keydown", e => {
+  if(e.key === "ArrowLeft") pos -= 100;
+  if(e.key === "ArrowRight") pos += 100;
+  player.style.left = pos + "px";
+});
 
-function start(){
-  document.getElementById("bgm").play();
-  document.getElementById("aura").style.display="block";
+/* CRIAR OBSTÁCULOS */
+setInterval(() => {
+  let o = document.createElement("div");
+  o.className = "obstaculo";
+  o.style.left = Math.random()*window.innerWidth + "px";
+  document.body.appendChild(o);
 
-  document.body.innerHTML += `
-  <div>
-    <button id="atk" onclick="atk()">Ataque</button>
-    <button id="dom" onclick="dom()">Domínio</button>
-    <button onclick="charge()">Carregar Energia</button>
-  </div>`;
-}
+  let fall = setInterval(() => {
+    o.style.top = (o.offsetTop + 5) + "px";
 
-function atk(){
-  let dmg = Math.random()*10+5;
-  hpE -= dmg;
-  mana += 5;
-  efeito();
-  enemyAI();
-}
+    /* colisão */
+    if(
+      o.offsetTop > window.innerHeight - 80 &&
+      Math.abs(o.offsetLeft - player.offsetLeft) < 50
+    ){
+      vida--;
+      document.getElementById("vida").innerText = vida;
+      o.remove();
+      clearInterval(fall);
 
-function dom(){
-  if(mana<40 || cdDominio) return;
+      if(vida <= 0){
+        alert("💀 Você foi derrotado");
+        location.reload();
+      }
+    }
 
-  mana -= 40;
-  cdDominio=true;
+    if(o.offsetTop > window.innerHeight){
+      o.remove();
+      clearInterval(fall);
+    }
 
-  let dmg = Math.random()*40+20;
-  hpE -= dmg;
+  }, 20);
 
-  screenShake();
-  spawnParticles(30);
+}, 1000);
 
-  setTimeout(()=> cdDominio=false,3000);
+/* DOMÍNIO (tecla espaço) */
+document.addEventListener("keydown", e => {
+  if(e.code === "Space"){
+    document.body.style.background = "purple";
 
-  enemyAI(true);
-}
+    document.querySelectorAll(".obstaculo").forEach(o => o.remove());
 
-function charge(){
-  mana += 15;
-  enemyAI();
-}
-
-function enemyAI(forte=false){
-  let choice = Math.random();
-
-  if(forte){
-    hpP -= 20;
-  } else if(choice<0.5){
-    hpP -= 10;
-  } else {
-    hpP -= 5;
-    hpE += 5; // inimigo se cura
+    setTimeout(()=>{
+      document.body.style.background = "black";
+    },300);
   }
-
-  efeito();
-  check();
-}
-
-function efeito(){
-  screenShake();
-  update();
-}
-
-function screenShake(){
-  document.body.style.animation="shake 0.3s";
-  setTimeout(()=>document.body.style.animation="none",300);
-}
-
-function spawnParticles(n){
-  for(let i=0;i<n;i++){
-    let p=document.createElement("div");
-    p.className="particle";
-    p.style.left=Math.random()*100+"%";
-    p.style.top="80%";
-    document.body.appendChild(p);
-    setTimeout(()=>p.remove(),2000);
-  }
-}
-
-function check(){
-  if(hpE<=0){
-    end("🔥 FINAL LENDÁRIO: VOCÊ REESCREVEU A REALIDADE");
-  }
-  if(hpP<=0){
-    end("💀 FINAL: VOCÊ FOI APAGADO");
-  }
-}
-
-function end(msg){
-  document.body.innerHTML = `<h1>${msg}</h1>`;
-}
+});
 </script>
 
 </body>

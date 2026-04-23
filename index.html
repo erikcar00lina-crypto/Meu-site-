@@ -2,12 +2,12 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Reino do Autor Absoluto</title>
+<title>Modo Lendário</title>
 
 <style>
 body {
   margin: 0;
-  background: radial-gradient(circle, #000, #050010);
+  background: radial-gradient(circle, #000, #020012);
   color: white;
   font-family: Arial;
   text-align: center;
@@ -23,26 +23,32 @@ body {
 
 .bar {
   width: 80%;
-  height: 20px;
+  height: 18px;
   background: #222;
   margin: 5px auto;
   border-radius: 10px;
   overflow: hidden;
 }
 
+.hp { background: linear-gradient(to right, red, orange); }
+.mana { background: linear-gradient(to right, purple, cyan); }
+
 .fill {
   height: 100%;
-  background: linear-gradient(to right, purple, cyan);
+  width: 100%;
 }
 
 /* BOTÕES */
 button {
-  margin: 10px;
-  padding: 12px 20px;
+  margin: 8px;
+  padding: 12px 18px;
   background: purple;
   border: none;
   color: white;
   cursor: pointer;
+}
+button:disabled {
+  opacity: 0.4;
 }
 button:hover {
   background: cyan;
@@ -57,15 +63,10 @@ button:hover {
   75% { transform: translate(5px,5px); }
 }
 
-@keyframes flash {
-  from { background: white; }
-  to { background: black; }
-}
-
 #aura {
   position: fixed;
-  width: 200px;
-  height: 200px;
+  width: 250px;
+  height: 250px;
   border-radius: 50%;
   top: 50%;
   left: 50%;
@@ -76,7 +77,24 @@ button:hover {
 
 @keyframes pulse {
   from { opacity: 0.3; transform: scale(1); }
-  to { opacity: 0.8; transform: scale(1.5); }
+  to { opacity: 0.9; transform: scale(1.6); }
+}
+
+/* partículas */
+.particle {
+  position: fixed;
+  width: 5px;
+  height: 5px;
+  background: cyan;
+  border-radius: 50%;
+  animation: float 2s linear forwards;
+}
+
+@keyframes float {
+  to {
+    transform: translateY(-200px);
+    opacity: 0;
+  }
 }
 </style>
 </head>
@@ -84,97 +102,126 @@ button:hover {
 <body>
 
 <div id="hud">
-  <div>❤️ Você</div>
-  <div class="bar"><div id="hpPlayer" class="fill" style="width:100%"></div></div>
-  <div>💀 Inimigo</div>
-  <div class="bar"><div id="hpEnemy" class="fill" style="width:100%"></div></div>
+  ❤️ Player
+  <div class="bar"><div id="hpP" class="fill hp"></div></div>
+
+  ⚡ Energia
+  <div class="bar"><div id="manaP" class="fill mana"></div></div>
+
+  💀 Inimigo
+  <div class="bar"><div id="hpE" class="fill hp"></div></div>
 </div>
 
 <h1>絶対的作者の王国</h1>
-<p>Uma presença surge diante de você...</p>
+<p>Batalha Lendária iniciada...</p>
 
-<button onclick="iniciar()">Iniciar Batalha</button>
+<button onclick="start()">Começar</button>
 
 <div id="aura" style="display:none;"></div>
 
 <audio id="bgm" loop>
-  <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3">
-</audio>
-
-<audio id="hit">
-  <source src="https://www.soundjay.com/buttons/sounds/button-10.mp3">
+  <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3">
 </audio>
 
 <script>
-let playerHP = 100;
-let enemyHP = 100;
+let hpP=100, hpE=100, mana=100;
+let cdDominio=false;
 
-function atualizarHUD() {
-  document.getElementById("hpPlayer").style.width = playerHP + "%";
-  document.getElementById("hpEnemy").style.width = enemyHP + "%";
+function update(){
+  document.getElementById("hpP").style.width = hpP+"%";
+  document.getElementById("hpE").style.width = hpE+"%";
+  document.getElementById("manaP").style.width = mana+"%";
 }
 
-function som(id) {
-  document.getElementById(id).play();
-}
-
-function iniciar() {
+function start(){
   document.getElementById("bgm").play();
-  document.getElementById("aura").style.display = "block";
+  document.getElementById("aura").style.display="block";
 
   document.body.innerHTML += `
-    <p>O inimigo ativa um domínio...</p>
-    <button onclick="ataque()">Atacar</button>
-    <button onclick="dominio()">Expandir Domínio</button>
-  `;
+  <div>
+    <button id="atk" onclick="atk()">Ataque</button>
+    <button id="dom" onclick="dom()">Domínio</button>
+    <button onclick="charge()">Carregar Energia</button>
+  </div>`;
 }
 
-function ataque() {
-  som("hit");
-  let dano = Math.floor(Math.random() * 15) + 5;
-  enemyHP -= dano;
-
-  contraAtaque();
-  animacao();
-
-  verificar();
+function atk(){
+  let dmg = Math.random()*10+5;
+  hpE -= dmg;
+  mana += 5;
+  efeito();
+  enemyAI();
 }
 
-function dominio() {
-  som("hit");
-  document.body.style.animation = "shake 0.3s";
-  let dano = Math.floor(Math.random() * 30) + 20;
-  enemyHP -= dano;
+function dom(){
+  if(mana<40 || cdDominio) return;
 
-  contraAtaque(true);
-  animacao();
+  mana -= 40;
+  cdDominio=true;
 
-  verificar();
+  let dmg = Math.random()*40+20;
+  hpE -= dmg;
+
+  screenShake();
+  spawnParticles(30);
+
+  setTimeout(()=> cdDominio=false,3000);
+
+  enemyAI(true);
 }
 
-function contraAtaque(forte=false) {
-  let dano = forte ? 15 : 8;
-  playerHP -= dano;
+function charge(){
+  mana += 15;
+  enemyAI();
 }
 
-function animacao() {
-  document.body.style.animation = "shake 0.3s";
-  setTimeout(() => {
-    document.body.style.animation = "none";
-  }, 300);
-  atualizarHUD();
-}
+function enemyAI(forte=false){
+  let choice = Math.random();
 
-function verificar() {
-  if (enemyHP <= 0) {
-    fim("🔥 FINAL: AUTOR SUPREMO — Você venceu");
+  if(forte){
+    hpP -= 20;
+  } else if(choice<0.5){
+    hpP -= 10;
+  } else {
+    hpP -= 5;
+    hpE += 5; // inimigo se cura
   }
-  if (playerHP <= 0) {
-    fim("💀 FINAL: APAGADO — Você perdeu");
+
+  efeito();
+  check();
+}
+
+function efeito(){
+  screenShake();
+  update();
+}
+
+function screenShake(){
+  document.body.style.animation="shake 0.3s";
+  setTimeout(()=>document.body.style.animation="none",300);
+}
+
+function spawnParticles(n){
+  for(let i=0;i<n;i++){
+    let p=document.createElement("div");
+    p.className="particle";
+    p.style.left=Math.random()*100+"%";
+    p.style.top="80%";
+    document.body.appendChild(p);
+    setTimeout(()=>p.remove(),2000);
   }
 }
 
-function fim(msg) {
+function check(){
+  if(hpE<=0){
+    end("🔥 FINAL LENDÁRIO: VOCÊ REESCREVEU A REALIDADE");
+  }
+  if(hpP<=0){
+    end("💀 FINAL: VOCÊ FOI APAGADO");
+  }
+}
+
+function end(msg){
   document.body.innerHTML = `<h1>${msg}</h1>`;
 }
 </script>

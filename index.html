@@ -41,6 +41,19 @@ body {
   top: 10px;
   width: 100%;
 }
+
+/* BOTÕES MOBILE */
+#controles {
+  position: fixed;
+  bottom: 20px;
+  width: 100%;
+}
+
+button {
+  padding: 15px;
+  margin: 10px;
+  font-size: 20px;
+}
 </style>
 </head>
 
@@ -50,18 +63,23 @@ body {
 
 <div id="player"></div>
 
+<div id="controles">
+  <button onclick="mover(-100)">⬅️</button>
+  <button onclick="dominio()">⚡</button>
+  <button onclick="mover(100)">➡️</button>
+</div>
+
 <script>
 let player = document.getElementById("player");
 let vida = 3;
 let pos = window.innerWidth / 2;
 
-document.addEventListener("keydown", e => {
-  if(e.key === "ArrowLeft") pos -= 100;
-  if(e.key === "ArrowRight") pos += 100;
+function mover(dir){
+  pos += dir;
   player.style.left = pos + "px";
-});
+}
 
-/* CRIAR OBSTÁCULOS */
+/* OBSTÁCULOS */
 setInterval(() => {
   let o = document.createElement("div");
   o.className = "obstaculo";
@@ -71,7 +89,6 @@ setInterval(() => {
   let fall = setInterval(() => {
     o.style.top = (o.offsetTop + 5) + "px";
 
-    /* colisão */
     if(
       o.offsetTop > window.innerHeight - 80 &&
       Math.abs(o.offsetLeft - player.offsetLeft) < 50
@@ -82,7 +99,7 @@ setInterval(() => {
       clearInterval(fall);
 
       if(vida <= 0){
-        alert("💀 Você foi derrotado");
+        alert("💀 Você perdeu");
         location.reload();
       }
     }
@@ -96,18 +113,16 @@ setInterval(() => {
 
 }, 1000);
 
-/* DOMÍNIO (tecla espaço) */
-document.addEventListener("keydown", e => {
-  if(e.code === "Space"){
-    document.body.style.background = "purple";
+/* DOMÍNIO */
+function dominio(){
+  document.body.style.background = "purple";
 
-    document.querySelectorAll(".obstaculo").forEach(o => o.remove());
+  document.querySelectorAll(".obstaculo").forEach(o => o.remove());
 
-    setTimeout(()=>{
-      document.body.style.background = "black";
-    },300);
-  }
-});
+  setTimeout(()=>{
+    document.body.style.background = "black";
+  },300);
+}
 </script>
 
 </body>

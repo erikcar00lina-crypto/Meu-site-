@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Runner do Autor Absoluto</title>
+<title>Runner 3 Pistas</title>
 
 <style>
 body {
@@ -10,20 +10,18 @@ body {
   background: black;
   overflow: hidden;
   color: white;
-  font-family: Arial;
   text-align: center;
 }
 
 /* PLAYER */
 #player {
   position: absolute;
-  bottom: 20px;
-  left: 50%;
+  bottom: 40px;
   width: 50px;
   height: 50px;
   background: purple;
-  transform: translateX(-50%);
   border-radius: 10px;
+  transition: left 0.2s;
 }
 
 /* OBSTÁCULOS */
@@ -42,7 +40,7 @@ body {
   width: 100%;
 }
 
-/* BOTÕES MOBILE */
+/* BOTÕES */
 #controles {
   position: fixed;
   bottom: 20px;
@@ -52,7 +50,7 @@ body {
 button {
   padding: 15px;
   margin: 10px;
-  font-size: 20px;
+  font-size: 18px;
 }
 </style>
 </head>
@@ -64,34 +62,47 @@ button {
 <div id="player"></div>
 
 <div id="controles">
-  <button onclick="mover(-100)">⬅️</button>
+  <button onclick="mover(-1)">⬅️</button>
   <button onclick="dominio()">⚡</button>
-  <button onclick="mover(100)">➡️</button>
+  <button onclick="mover(1)">➡️</button>
 </div>
 
 <script>
+let lanes = [window.innerWidth*0.2, window.innerWidth*0.5, window.innerWidth*0.8];
+let laneIndex = 1; // começa no meio
 let player = document.getElementById("player");
 let vida = 3;
-let pos = window.innerWidth / 2;
+
+function atualizarPos(){
+  player.style.left = lanes[laneIndex] + "px";
+}
+
+atualizarPos();
 
 function mover(dir){
-  pos += dir;
-  player.style.left = pos + "px";
+  laneIndex += dir;
+  if(laneIndex < 0) laneIndex = 0;
+  if(laneIndex > 2) laneIndex = 2;
+  atualizarPos();
 }
 
 /* OBSTÁCULOS */
 setInterval(() => {
   let o = document.createElement("div");
   o.className = "obstaculo";
-  o.style.left = Math.random()*window.innerWidth + "px";
+
+  let lane = Math.floor(Math.random()*3);
+  o.dataset.lane = lane;
+  o.style.left = lanes[lane] + "px";
+
   document.body.appendChild(o);
 
   let fall = setInterval(() => {
-    o.style.top = (o.offsetTop + 5) + "px";
+    o.style.top = (o.offsetTop + 6) + "px";
 
     if(
-      o.offsetTop > window.innerHeight - 80 &&
-      Math.abs(o.offsetLeft - player.offsetLeft) < 50
+      o.offsetTop > window.innerHeight - 100 &&
+      parseInt(o.dataset.lane) === laneIndex
     ){
       vida--;
       document.getElementById("vida").innerText = vida;
@@ -99,7 +110,7 @@ setInterval(() => {
       clearInterval(fall);
 
       if(vida <= 0){
-        alert("💀 Você perdeu");
+        alert("💀 Game Over");
         location.reload();
       }
     }
@@ -111,7 +122,7 @@ setInterval(() => {
 
   }, 20);
 
-}, 1000);
+}, 900);
 
 /* DOMÍNIO */
 function dominio(){
@@ -126,4 +137,4 @@ function dominio(){
 </script>
 
 </body>
-</html>
+  </html>

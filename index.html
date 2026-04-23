@@ -2,139 +2,112 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Runner 3 Pistas</title>
+<title>Runner 3D Fake</title>
 
 <style>
 body {
   margin: 0;
   background: black;
   overflow: hidden;
-  color: white;
-  text-align: center;
+}
+
+/* PISTA */
+#road {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  perspective: 500px;
 }
 
 /* PLAYER */
 #player {
   position: absolute;
-  bottom: 40px;
-  width: 50px;
-  height: 50px;
+  bottom: 80px;
+  left: 50%;
+  width: 40px;
+  height: 60px;
   background: purple;
-  border-radius: 10px;
-  transition: left 0.2s;
+  transform: translateX(-50%);
 }
 
 /* OBSTÁCULOS */
 .obstaculo {
   position: absolute;
-  top: 0;
-  width: 50px;
-  height: 50px;
+  width: 40px;
+  height: 40px;
   background: red;
-}
-
-/* HUD */
-#hud {
-  position: fixed;
-  top: 10px;
-  width: 100%;
-}
-
-/* BOTÕES */
-#controles {
-  position: fixed;
-  bottom: 20px;
-  width: 100%;
-}
-
-button {
-  padding: 15px;
-  margin: 10px;
-  font-size: 18px;
+  transform-origin: center;
 }
 </style>
 </head>
 
 <body>
 
-<div id="hud">❤️ Vida: <span id="vida">3</span></div>
-
+<div id="road"></div>
 <div id="player"></div>
 
-<div id="controles">
-  <button onclick="mover(-1)">⬅️</button>
-  <button onclick="dominio()">⚡</button>
-  <button onclick="mover(1)">➡️</button>
-</div>
-
 <script>
-let lanes = [window.innerWidth*0.2, window.innerWidth*0.5, window.innerWidth*0.8];
-let laneIndex = 1; // começa no meio
+let road = document.getElementById("road");
 let player = document.getElementById("player");
-let vida = 3;
 
-function atualizarPos(){
-  player.style.left = lanes[laneIndex] + "px";
-}
+let lanes = [-100, 0, 100];
+let lane = 1;
 
-atualizarPos();
+/* mover */
+document.addEventListener("click", e => {
+  if(e.clientX < window.innerWidth/2) lane--;
+  else lane++;
 
-function mover(dir){
-  laneIndex += dir;
-  if(laneIndex < 0) laneIndex = 0;
-  if(laneIndex > 2) laneIndex = 2;
-  atualizarPos();
-}
+  if(lane < 0) lane = 0;
+  if(lane > 2) lane = 2;
 
-/* OBSTÁCULOS */
-setInterval(() => {
+  player.style.left = (window.innerWidth/2 + lanes[lane]) + "px";
+});
+
+/* criar obstáculos */
+setInterval(()=>{
   let o = document.createElement("div");
   o.className = "obstaculo";
 
-  let lane = Math.floor(Math.random()*3);
-  o.dataset.lane = lane;
-  o.style.left = lanes[lane] + "px";
+  let l = Math.floor(Math.random()*3);
+  o.dataset.lane = l;
 
-  document.body.appendChild(o);
+  let z = 0;
+  road.appendChild(o);
 
-  let fall = setInterval(() => {
-    o.style.top = (o.offsetTop + 6) + "px";
+  let move = setInterval(()=>{
+    z += 5;
 
-    if(
-      o.offsetTop > window.innerHeight - 100 &&
-      parseInt(o.dataset.lane) === laneIndex
-    ){
-      vida--;
-      document.getElementById("vida").innerText = vida;
-      o.remove();
-      clearInterval(fall);
+    let scale = z/100;
 
-      if(vida <= 0){
-        alert("💀 Game Over");
-        location.reload();
-      }
+    o.style.left = (window.innerWidth/2 + lanes[l]) + "px";
+    o.style.top = (z*2) + "px";
+    o.style.transform = "scale(" + scale + ")";
+
+    /* colisão */
+    if(z > 80 && l === lane){
+      alert("💀 Game Over");
+      location.reload();
     }
 
-    if(o.offsetTop > window.innerHeight){
+    if(z > 150){
       o.remove();
-      clearInterval(fall);
+      clearInterval(move);
     }
 
-  }, 20);
+  }, 30);
 
-}, 900);
+}, 1000);
 
 /* DOMÍNIO */
-function dominio(){
-  document.body.style.background = "purple";
-
-  document.querySelectorAll(".obstaculo").forEach(o => o.remove());
-
-  setTimeout(()=>{
-    document.body.style.background = "black";
-  },300);
-}
+document.addEventListener("keydown", e=>{
+  if(e.code==="Space"){
+    document.body.style.background="purple";
+    document.querySelectorAll(".obstaculo").forEach(o=>o.remove());
+    setTimeout(()=>document.body.style.background="black",300);
+  }
+});
 </script>
 
 </body>
-  </html>
+</html>

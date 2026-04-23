@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Runner 3D Fake</title>
+<title>Runner 3D Melhorado</title>
 
 <style>
 body {
@@ -11,23 +11,16 @@ body {
   overflow: hidden;
 }
 
-/* PISTA */
-#road {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  perspective: 500px;
-}
-
 /* PLAYER */
 #player {
   position: absolute;
-  bottom: 80px;
-  left: 50%;
-  width: 40px;
+  bottom: 60px;
+  width: 50px;
   height: 60px;
   background: purple;
+  left: 50%;
   transform: translateX(-50%);
+  border-radius: 10px;
 }
 
 /* OBSTÁCULOS */
@@ -36,24 +29,21 @@ body {
   width: 40px;
   height: 40px;
   background: red;
-  transform-origin: center;
 }
 </style>
 </head>
 
 <body>
 
-<div id="road"></div>
 <div id="player"></div>
 
 <script>
-let road = document.getElementById("road");
 let player = document.getElementById("player");
 
-let lanes = [-100, 0, 100];
+let lanes = [-120, 0, 120];
 let lane = 1;
 
-/* mover */
+/* mover (toque na tela) */
 document.addEventListener("click", e => {
   if(e.clientX < window.innerWidth/2) lane--;
   else lane++;
@@ -73,19 +63,19 @@ setInterval(()=>{
   o.dataset.lane = l;
 
   let z = 0;
-  road.appendChild(o);
+  document.body.appendChild(o);
 
   let move = setInterval(()=>{
-    z += 5;
+    z += 2; // MAIS LENTO
 
-    let scale = z/100;
+    let scale = z/120;
 
     o.style.left = (window.innerWidth/2 + lanes[l]) + "px";
-    o.style.top = (z*2) + "px";
+    o.style.top = (z*3) + "px";
     o.style.transform = "scale(" + scale + ")";
 
-    /* colisão */
-    if(z > 80 && l === lane){
+    /* colisão mais justa */
+    if(z > 90 && z < 110 && l === lane){
       alert("💀 Game Over");
       location.reload();
     }
@@ -97,16 +87,7 @@ setInterval(()=>{
 
   }, 30);
 
-}, 1000);
-
-/* DOMÍNIO */
-document.addEventListener("keydown", e=>{
-  if(e.code==="Space"){
-    document.body.style.background="purple";
-    document.querySelectorAll(".obstaculo").forEach(o=>o.remove());
-    setTimeout(()=>document.body.style.background="black",300);
-  }
-});
+}, 1200); // MAIS TEMPO ENTRE OBSTÁCULOS
 </script>
 
 </body>

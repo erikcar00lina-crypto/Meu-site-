@@ -7,18 +7,35 @@
 <style>
 body {
   margin: 0;
-  background: black;
+  background: radial-gradient(circle, #000, #050010);
   color: white;
   font-family: Arial;
   text-align: center;
   overflow: hidden;
 }
 
-h1 {
-  margin-top: 15%;
-  font-size: 2.5em;
+/* HUD */
+#hud {
+  position: fixed;
+  top: 10px;
+  width: 100%;
 }
 
+.bar {
+  width: 80%;
+  height: 20px;
+  background: #222;
+  margin: 5px auto;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.fill {
+  height: 100%;
+  background: linear-gradient(to right, purple, cyan);
+}
+
+/* BOTÕES */
 button {
   margin: 10px;
   padding: 12px 20px;
@@ -27,81 +44,138 @@ button {
   color: white;
   cursor: pointer;
 }
-
 button:hover {
   background: cyan;
   color: black;
+}
+
+/* ANIMAÇÕES */
+@keyframes shake {
+  0% { transform: translate(0px); }
+  25% { transform: translate(5px,-5px); }
+  50% { transform: translate(-5px,5px); }
+  75% { transform: translate(5px,5px); }
+}
+
+@keyframes flash {
+  from { background: white; }
+  to { background: black; }
+}
+
+#aura {
+  position: fixed;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, purple, transparent);
+  animation: pulse 1s infinite alternate;
+}
+
+@keyframes pulse {
+  from { opacity: 0.3; transform: scale(1); }
+  to { opacity: 0.8; transform: scale(1.5); }
 }
 </style>
 </head>
 
 <body>
 
+<div id="hud">
+  <div>❤️ Você</div>
+  <div class="bar"><div id="hpPlayer" class="fill" style="width:100%"></div></div>
+  <div>💀 Inimigo</div>
+  <div class="bar"><div id="hpEnemy" class="fill" style="width:100%"></div></div>
+</div>
+
 <h1>絶対的作者の王国</h1>
-<p>Você despertou dentro do domínio...</p>
+<p>Uma presença surge diante de você...</p>
 
-<button onclick="inicio()">Entrar no Vazio</button>
+<button onclick="iniciar()">Iniciar Batalha</button>
 
-<audio id="somClique">
-  <source src="https://www.soundjay.com/buttons/sounds/button-16.mp3">
+<div id="aura" style="display:none;"></div>
+
+<audio id="bgm" loop>
+  <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3">
+</audio>
+
+<audio id="hit">
+  <source src="https://www.soundjay.com/buttons/sounds/button-10.mp3">
 </audio>
 
 <script>
-function som() {
-  document.getElementById("somClique").play();
+let playerHP = 100;
+let enemyHP = 100;
+
+function atualizarHUD() {
+  document.getElementById("hpPlayer").style.width = playerHP + "%";
+  document.getElementById("hpEnemy").style.width = enemyHP + "%";
 }
 
-function inicio() {
-  som();
-  document.body.innerHTML = `
-    <h1>O Vazio te observa...</h1>
-    <p>Uma voz pergunta: "Você quer poder... ou liberdade?"</p>
-    <button onclick="poder()">Buscar Poder</button>
-    <button onclick="fugir()">Fugir</button>
+function som(id) {
+  document.getElementById(id).play();
+}
+
+function iniciar() {
+  document.getElementById("bgm").play();
+  document.getElementById("aura").style.display = "block";
+
+  document.body.innerHTML += `
+    <p>O inimigo ativa um domínio...</p>
+    <button onclick="ataque()">Atacar</button>
+    <button onclick="dominio()">Expandir Domínio</button>
   `;
 }
 
-function poder() {
-  som();
-  document.body.innerHTML = `
-    <h1>Você aceitou o poder...</h1>
-    <p>Mas algo está errado...</p>
-    <button onclick="dominar()">Controlar o poder</button>
-    <button onclick="perder()">Perder o controle</button>
-  `;
+function ataque() {
+  som("hit");
+  let dano = Math.floor(Math.random() * 15) + 5;
+  enemyHP -= dano;
+
+  contraAtaque();
+  animacao();
+
+  verificar();
 }
 
-function fugir() {
-  som();
-  document.body.innerHTML = `
-    <h1>Você tenta fugir...</h1>
-    <p>Mas o vazio não deixa...</p>
-    <button onclick="morrer()">Ser consumido</button>
-  `;
+function dominio() {
+  som("hit");
+  document.body.style.animation = "shake 0.3s";
+  let dano = Math.floor(Math.random() * 30) + 20;
+  enemyHP -= dano;
+
+  contraAtaque(true);
+  animacao();
+
+  verificar();
 }
 
-function dominar() {
-  som();
-  document.body.innerHTML = `
-    <h1>FINAL: AUTOR SUPREMO</h1>
-    <p>Você dominou a realidade.</p>
-  `;
+function contraAtaque(forte=false) {
+  let dano = forte ? 15 : 8;
+  playerHP -= dano;
 }
 
-function perder() {
-  som();
-  document.body.innerHTML = `
-    <h1>FINAL: CORROMPIDO</h1>
-    <p>O vazio te consumiu.</p>
-  `;
+function animacao() {
+  document.body.style.animation = "shake 0.3s";
+  setTimeout(() => {
+    document.body.style.animation = "none";
+  }, 300);
+  atualizarHUD();
 }
 
-function morrer() {
-  som();
-  document.body.innerHTML = `
-    <h1>FINAL: NADA</h1>
-    <p>Você deixou de existir.</p>
-  `;
+function verificar() {
+  if (enemyHP <= 0) {
+    fim("🔥 FINAL: AUTOR SUPREMO — Você venceu");
+  }
+  if (playerHP <= 0) {
+    fim("💀 FINAL: APAGADO — Você perdeu");
+  }
+}
+
+function fim(msg) {
+  document.body.innerHTML = `<h1>${msg}</h1>`;
 }
 </script>
 

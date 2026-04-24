@@ -1,201 +1,152 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>Runner Lendário com Boss</title>
-
+<title>Mini Miner</title>
 <style>
-body {
-  margin: 0;
-  background: black;
-  overflow: hidden;
-  color: white;
-  text-align: center;
-  font-family: Arial;
-}
-
-/* PLAYER */
-#player {
-  position: absolute;
-  bottom: 80px;
-  width: 50px;
-  height: 60px;
-  border-radius: 10px;
-  transition: left 0.2s;
-}
-
-/* BOSS */
-#boss {
-  position: absolute;
-  bottom: 80px;
-  width: 50px;
-  height: 60px;
-  background: red;
-  left: 50%;
-  transform: translateX(-50%);
-  opacity: 0.7;
-}
-
-/* OBSTÁCULOS */
-.obstaculo {
-  position: absolute;
-  width: 50px;
-  height: 50px;
-  background: red;
-}
-
-/* HUD */
-#hud {
-  position: fixed;
-  top: 10px;
-  width: 100%;
-}
-
-/* CONTROLES */
-#controls {
-  position: fixed;
-  bottom: 20px;
-  width: 100%;
-}
-
-button {
-  padding: 20px;
-  margin: 10px;
-  font-size: 24px;
-  border-radius: 10px;
-}
-
-/* GAME OVER */
-#gameover {
-  display:none;
-  position:fixed;
-  top:30%;
-  width:100%;
-}
+  body { margin: 0; overflow: hidden; background: #87CEEB; }
+  canvas { display: block; }
 </style>
 </head>
-
 <body>
 
-<div id="hud">
-❤️ <span id="vida">3</span> |
-🏆 <span id="score">99999</span>
-</div>
-
-<div id="player"></div>
-<div id="boss"></div>
-
-<div id="controls">
-<button onclick="moveLeft()">⬅️</button>
-<button onclick="moveRight()">➡️</button>
-</div>
-
-<div id="gameover">
-<h1>💀 Game Over</h1>
-<p>Pontos: <span id="finalScore"></span></p>
-<button onclick="location.reload()">Reiniciar</button>
-</div>
+<canvas id="game"></canvas>
 
 <script>
-let player = document.getElementById("player");
-let boss = document.getElementById("boss");
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
 
-let vida = 3;
-let score = 0;
-let gameRunning = true;
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
-/* pistas */
-let lanes = [window.innerWidth*0.2, window.innerWidth*0.5, window.innerWidth*0.8];
-let laneIndex = 1;
+let gravity = 0.5;
 
-function updatePlayer(){
-  player.style.left = lanes[laneIndex] + "px";
+// PLAYER
+let player = {
+  x: 100,
+  y: 100,
+  w: 30,
+  h: 30,
+  dx: 0,
+  dy: 0,
+  speed: 4,
+  jumping: false
+};
+
+// BOSS (segue o player)
+let boss = {
+  x: 300,
+  y: 100,
+  w: 30,
+  h: 30,
+  speed: 1.5
+};
+
+// BLOCOS (mundo em grid)
+let blockSize = 40;
+let blocks = [];
+
+for (let x = 0; x < 20; x++) {
+  for (let y = 10; y < 15; y++) {
+    blocks.push({
+      x: x * blockSize,
+      y: y * blockSize,
+      w: blockSize,
+      h: blockSize
+    });
+  }
 }
-updatePlayer();
 
-/* boss posição */
-let bossOffset = -150; // começa atrás
+// CONTROLES
+let keys = {};
+document.addEventListener("keydown", e => keys[e.key] = true);
+document.addEventListener("keyup", e => keys[e.key] = false);
 
-function updateBoss(){
-  boss.style.left = lanes[laneIndex] + "px";
-  boss.style.bottom = (80 + bossOffset) + "px";
-}
+// QUEBRAR BLOCOS (clique)
+canvas.addEventListener("click", function(e) {
+  let rect = canvas.getBoundingClientRect();
+  let mouseX = e.clientX - rect.left;
+  let mouseY = e.clientY - rect.top;
 
-setInterval(()=>{
-  if(!gameRunning) return;
+  for (let i = 0; i < blocks.length; i++) {
+    let b = blocks[i];
 
-  bossOffset += 0.5; // boss vai chegando
-  updateBoss();
+    if (mouseX >= b.x && mouseX <= b.x + b.w &&
+        mouseY >= b.y && mouseY <= b.y + b.h) {
+      
+      blocks.splice(i, 1); // remove bloco
+      break;
+    }
+  }
+});
 
-  if(bossOffset >= 0){
-    gameOver();
+// UPDATE
+function update() {
+  // Movimento
+  if (keys["a"]) player.dx = -player.speed;
+  else if (keys["d"]) player.dx = player.speed;
+  else player.dx = 0;
+
+  if (keys["w"] && !player.jumping) {
+    player.dy = -10;
+    player.jumping = true;
   }
 
-}, 100);
+  // Gravidade
+  player.dy += gravity;
 
-/* movimento */
-function moveLeft(){ if(!gameRunning) return; if(laneIndex>0) laneIndex--; updatePlayer(); }
-function moveRight(){ if(!gameRunning) return; if(laneIndex<2) laneIndex++; updatePlayer(); }
+  player.x += player.dx;
+  player.y += player.dy;
 
-/* score */
-setInterval(()=>{
-  if(!gameRunning) return;
-  score++;
-  document.getElementById("score").innerText = score;
-},1000);
+  // Colisão com blocos
+  player.jumping = true;
+  blocks.forEach(b => {
+    if (player.x < b.x + b.w &&
+        player.x + player.w > b.x &&
+        player.y < b.y + b.h &&
+        player.y + player.h > b.y) {
 
-/* obstáculos */
-setInterval(()=>{
-  if(!gameRunning) return;
-
-  let o = document.createElement("div");
-  o.className = "obstaculo";
-
-  let lane = Math.floor(Math.random()*3);
-  o.dataset.lane = lane;
-  o.style.left = lanes[lane] + "px";
-  o.style.top = "0px";
-
-  document.body.appendChild(o);
-
-  let fall = setInterval(()=>{
-    if(!gameRunning){
-      o.remove();
-      clearInterval(fall);
-      return;
+      player.y = b.y - player.h;
+      player.dy = 0;
+      player.jumping = false;
     }
+  });
 
-    let top = parseInt(o.style.top);
-    o.style.top = (top + 7) + "px";
+  // Boss segue player
+  if (boss.x < player.x) boss.x += boss.speed;
+  else boss.x -= boss.speed;
 
-    if(top > window.innerHeight - 140 && lane === laneIndex){
-      vida--;
-      document.getElementById("vida").innerText = vida;
-
-      bossOffset += 20; // punição: boss aproxima
-
-      o.remove();
-      clearInterval(fall);
-
-      if(vida <= 0) gameOver();
-    }
-
-    if(top > window.innerHeight){
-      o.remove();
-      clearInterval(fall);
-    }
-
-  },25);
-
-},1000);
-
-/* game over */
-function gameOver(){
-  gameRunning = false;
-  document.getElementById("controls").style.display = "none";
-  document.getElementById("gameover").style.display="block";
-  document.getElementById("finalScore").innerText=score;
+  if (boss.y < player.y) boss.y += boss.speed;
+  else boss.y -= boss.speed;
 }
+
+// DRAW
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Player
+  ctx.fillStyle = "blue";
+  ctx.fillRect(player.x, player.y, player.w, player.h);
+
+  // Boss
+  ctx.fillStyle = "red";
+  ctx.fillRect(boss.x, boss.y, boss.w, boss.h);
+
+  // Blocos
+  ctx.fillStyle = "brown";
+  blocks.forEach(b => {
+    ctx.fillRect(b.x, b.y, b.w, b.h);
+  });
+}
+
+// LOOP
+function gameLoop() {
+  update();
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
 </script>
 
 </body>

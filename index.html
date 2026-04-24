@@ -47,8 +47,10 @@ body {
 }
 
 button {
-  padding: 12px;
-  margin: 6px;
+  padding: 20px;
+  margin: 10px;
+  font-size: 24px;
+  border-radius: 10px;
 }
 
 /* LOJA */
@@ -118,6 +120,7 @@ let player = document.getElementById("player");
 let vida = 3;
 let score = 0;
 let cd = false;
+let gameRunning = true;
 
 /* salvar */
 let skin = localStorage.getItem("skin") || "purple";
@@ -138,17 +141,20 @@ function updatePlayer(){
 }
 updatePlayer();
 
-function moveLeft(){ if(laneIndex>0) laneIndex--; updatePlayer(); }
-function moveRight(){ if(laneIndex<2) laneIndex++; updatePlayer(); }
+function moveLeft(){ if(!gameRunning) return; if(laneIndex>0) laneIndex--; updatePlayer(); }
+function moveRight(){ if(!gameRunning) return; if(laneIndex<2) laneIndex++; updatePlayer(); }
 
 /* score */
 setInterval(()=>{
+  if(!gameRunning) return;
   score++;
   document.getElementById("score").innerText = score;
 },1000);
 
 /* obstáculos */
 setInterval(()=>{
+  if(!gameRunning) return;
+
   let o = document.createElement("div");
   o.className = "obstaculo";
 
@@ -160,6 +166,12 @@ setInterval(()=>{
   document.body.appendChild(o);
 
   let fall = setInterval(()=>{
+    if(!gameRunning){
+      o.remove();
+      clearInterval(fall);
+      return;
+    }
+
     let top = parseInt(o.style.top);
     o.style.top = (top + 7) + "px";
 
@@ -183,7 +195,7 @@ setInterval(()=>{
 
 /* domínio */
 function dominio(){
-  if(cd) return;
+  if(cd || !gameRunning) return;
 
   cd = true;
   document.getElementById("btnDom").disabled = true;
@@ -214,7 +226,7 @@ function dominio(){
 }
 
 /* loja */
-function abrirLoja(){ document.getElementById("loja").style.display="block"; }
+function abrirLoja(){ if(!gameRunning) return; document.getElementById("loja").style.display="block"; }
 function fecharLoja(){ document.getElementById("loja").style.display="none"; }
 
 function comprarSkin(tipo,preco){
@@ -223,6 +235,7 @@ function comprarSkin(tipo,preco){
   skin=tipo;
   localStorage.setItem("skin",tipo);
   aplicarSkin();
+  document.getElementById("score").innerText = score;
 }
 
 function comprarPoder(preco){
@@ -230,10 +243,15 @@ function comprarPoder(preco){
   score-=preco;
   poderForte=true;
   localStorage.setItem("poder",true);
+  document.getElementById("score").innerText = score;
 }
 
 /* game over */
 function gameOver(){
+  gameRunning = false;
+
+  document.getElementById("controls").style.display = "none";
+
   document.getElementById("gameover").style.display="block";
   document.getElementById("finalScore").innerText=score;
 

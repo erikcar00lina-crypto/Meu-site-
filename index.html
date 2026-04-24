@@ -2,27 +2,26 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Mini Miner</title>
+<title>Mini Miner Mobile</title>
 <style>
-  body { margin: 0; overflow: hidden; background: #87CEEB; }
+  body { margin: 0; overflow: hidden; background: skyblue; }
   canvas { display: block; }
 
-  /* BOTÕES MOBILE */
   .btn {
     position: absolute;
-    width: 60px;
-    height: 60px;
+    width: 70px;
+    height: 70px;
     background: rgba(0,0,0,0.4);
     color: white;
-    font-size: 20px;
+    font-size: 25px;
     text-align: center;
-    line-height: 60px;
-    border-radius: 10px;
+    line-height: 70px;
+    border-radius: 12px;
     user-select: none;
   }
 
   #left { bottom: 80px; left: 20px; }
-  #right { bottom: 80px; left: 100px; }
+  #right { bottom: 80px; left: 110px; }
   #jump { bottom: 80px; right: 20px; }
 </style>
 </head>
@@ -38,26 +37,22 @@
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+canvas.width = innerWidth;
+canvas.height = innerHeight;
 
 let gravity = 0.5;
-let gameOver = false;
 
 // CONTROLE MOBILE
-let mobile = { left:false, right:false, jump:false };
+let mobile = {left:false,right:false,jump:false};
 
-function bindBtn(id, key){
-  let el = document.getElementById(id);
-  el.ontouchstart = () => mobile[key] = true;
-  el.ontouchend = () => mobile[key] = false;
+function bind(id,key){
+  let b=document.getElementById(id);
+  b.ontouchstart=()=>mobile[key]=true;
+  b.ontouchend=()=>mobile[key]=false;
 }
-bindBtn("left","left");
-bindBtn("right","right");
-bindBtn("jump","jump");
-
-// CÂMERA
-let camera = { x:0, y:0 };
+bind("left","left");
+bind("right","right");
+bind("jump","jump");
 
 // PLAYER
 let player = {
@@ -67,130 +62,98 @@ let player = {
   h: 30,
   dx: 0,
   dy: 0,
-  speed: 4,
-  jumping: false,
-  life: 100
+  jumping: false
 };
 
-// INVENTÁRIO
-let inventory = {
-  dirt: 0,
-  stone: 0,
-  gold: 0
-};
-
-// BOSS
-let boss = { x:600, y:100, w:30, h:30, speed:1.5 };
+// CÂMERA
+let camera = {x:0,y:0};
 
 // MUNDO
-let blockSize = 40;
 let blocks = [];
+let size = 40;
 
 function generateWorld(){
   blocks = [];
-  for (let x=0; x<100; x++){
-    for (let y=10; y<25; y++){
 
-      let type = "dirt";
-      if (y > 15) type = "stone";
-      if (y > 20 && Math.random() < 0.1) type = "gold";
+  for(let x=0;x<80;x++){
+    for(let y=12;y<25;y++){
+
+      let type="dirt";
+
+      if(y===12) type="grass";
+      else if(y>18) type="stone";
+
+      // água
+      if(x>10 && x<15 && y===12) type="water";
 
       blocks.push({
-        x:x*blockSize,
-        y:y*blockSize,
-        w:blockSize,
-        h:blockSize,
-        type:type,
-        hp: type==="dirt"?1 : type==="stone"?3 : 5
+        x:x*size,
+        y:y*size,
+        w:size,
+        h:size,
+        type:type
       });
+    }
+
+    // árvores
+    if(Math.random()<0.1){
+      let baseY = 11*size;
+      blocks.push({x:x*size,y:baseY,w:size,h:size,type:"wood"});
+      blocks.push({x:x*size,y:baseY-size,w:size,h:size,type:"leaf"});
     }
   }
 }
 generateWorld();
 
-// CONTROLES PC
-let keys = {};
-document.addEventListener("keydown", e=>keys[e.key]=true);
-document.addEventListener("keyup", e=>keys[e.key]=false);
-
-// MINERAÇÃO COM TEMPO
-canvas.addEventListener("mousedown", mine);
-function mine(e){
-  if (gameOver) return;
-
-  let rect = canvas.getBoundingClientRect();
-  let mx = e.clientX - rect.left + camera.x;
-  let my = e.clientY - rect.top + camera.y;
+// MINERAR
+canvas.addEventListener("touchstart", e=>{
+  let t = e.touches[0];
+  let mx = t.clientX + camera.x;
+  let my = t.clientY + camera.y;
 
   blocks.forEach((b,i)=>{
-    if (mx>=b.x && mx<=b.x+b.w && my>=b.y && my<=b.y+b.h){
-
-      b.hp--;
-
-      if (b.hp <= 0){
-        inventory[b.type]++;
-        blocks.splice(i,1);
-      }
+    if(mx>b.x && mx<b.x+b.w && my>b.y && my<b.y+b.h){
+      blocks.splice(i,1);
     }
   });
-}
-
-// RESTART
-function restartGame(){
-  player.x=200; player.y=100; player.life=100;
-  boss.x=600; boss.y=100;
-  inventory = {dirt:0,stone:0,gold:0};
-  gameOver=false;
-  generateWorld();
-}
+});
 
 // UPDATE
 function update(){
-  if (gameOver) return;
 
-  let left = keys["a"] || mobile.left;
-  let right = keys["d"] || mobile.right;
-  let jump = keys["w"] || mobile.jump;
+  if(mobile.left) player.dx=-4;
+  else if(mobile.right) player.dx=4;
+  else player.dx=0;
 
-  if (left) player.dx = -player.speed;
-  else if (right) player.dx = player.speed;
-  else player.dx = 0;
-
-  if (jump && !player.jumping){
-    player.dy = -10;
-    player.jumping = true;
+  if(mobile.jump && !player.jumping){
+    player.dy=-10;
+    player.jumping=true;
   }
 
-  player.dy += gravity;
-  player.x += player.dx;
-  player.y += player.dy;
+  player.dy+=gravity;
+  player.x+=player.dx;
+  player.y+=player.dy;
 
-  player.jumping = true;
+  // COLISÃO
+  player.jumping=true;
   blocks.forEach(b=>{
-    if (player.x < b.x+b.w &&
-        player.x+player.w > b.x &&
-        player.y < b.y+b.h &&
-        player.y+player.h > b.y){
+    if(player.x < b.x+b.w &&
+       player.x+player.w > b.x &&
+       player.y < b.y+b.h &&
+       player.y+player.h > b.y){
 
-      player.y = b.y - player.h;
-      player.dy = 0;
-      player.jumping = false;
+      if(b.type!=="water"){
+        player.y=b.y-player.h;
+        player.dy=0;
+        player.jumping=false;
+      }
     }
   });
 
-  // BOSS
-  boss.x += (player.x > boss.x ? boss.speed : -boss.speed);
-  boss.y += (player.y > boss.y ? boss.speed : -boss.speed);
-
-  // DANO
-  if (player.x < boss.x+boss.w &&
-      player.x+player.w > boss.x &&
-      player.y < boss.y+boss.h &&
-      player.y+player.h > boss.y){
-    player.life -= 0.5;
+  // CAIU DEMAIS → TELEPORTA
+  if(player.y > 1200){
+    player.y = 0;
   }
-
-  if (player.life <= 0) gameOver = true;
 
   // CÂMERA
   camera.x = player.x - canvas.width/2;
@@ -201,43 +164,36 @@ function update(){
 function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
+  // SOL
+  ctx.fillStyle="yellow";
+  ctx.beginPath();
+  ctx.arc(100,100,40,0,Math.PI*2);
+  ctx.fill();
+
+  // NUVENS
+  ctx.fillStyle="white";
+  ctx.fillRect(200,80,80,40);
+  ctx.fillRect(400,60,100,50);
+
   ctx.save();
-  ctx.translate(-camera.x, -camera.y);
+  ctx.translate(-camera.x,-camera.y);
 
   blocks.forEach(b=>{
-    if (b.type==="dirt") ctx.fillStyle="brown";
-    if (b.type==="stone") ctx.fillStyle="gray";
-    if (b.type==="gold") ctx.fillStyle="gold";
+    if(b.type==="dirt") ctx.fillStyle="brown";
+    if(b.type==="grass") ctx.fillStyle="green";
+    if(b.type==="stone") ctx.fillStyle="gray";
+    if(b.type==="water") ctx.fillStyle="blue";
+    if(b.type==="wood") ctx.fillStyle="#8B4513";
+    if(b.type==="leaf") ctx.fillStyle="lime";
+
     ctx.fillRect(b.x,b.y,b.w,b.h);
   });
 
   ctx.fillStyle="blue";
   ctx.fillRect(player.x,player.y,player.w,player.h);
 
-  ctx.fillStyle="red";
-  ctx.fillRect(boss.x,boss.y,boss.w,boss.h);
-
   ctx.restore();
-
-  // HUD
-  ctx.fillStyle="black";
-  ctx.fillText("Vida: "+Math.floor(player.life),20,30);
-  ctx.fillText("Terra: "+inventory.dirt,20,50);
-  ctx.fillText("Pedra: "+inventory.stone,20,70);
-  ctx.fillText("Ouro: "+inventory.gold,20,90);
-
-  if (gameOver){
-    ctx.font="40px Arial";
-    ctx.fillText("GAME OVER", canvas.width/2-120, canvas.height/2);
-    ctx.font="20px Arial";
-    ctx.fillText("Pressione R", canvas.width/2-80, canvas.height/2+40);
-  }
 }
-
-// RESET
-document.addEventListener("keydown", e=>{
-  if (e.key==="r" && gameOver) restartGame();
-});
 
 // LOOP
 function loop(){

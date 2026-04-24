@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Runner Lendário</title>
+<title>Runner Lendário com Boss</title>
 
 <style>
 body {
@@ -22,6 +22,18 @@ body {
   height: 60px;
   border-radius: 10px;
   transition: left 0.2s;
+}
+
+/* BOSS */
+#boss {
+  position: absolute;
+  bottom: 80px;
+  width: 50px;
+  height: 60px;
+  background: red;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0.7;
 }
 
 /* OBSTÁCULOS */
@@ -53,16 +65,6 @@ button {
   border-radius: 10px;
 }
 
-/* LOJA */
-#loja {
-  display:none;
-  position:fixed;
-  top:10%;
-  width:100%;
-  background:black;
-  padding:10px;
-}
-
 /* GAME OVER */
 #gameover {
   display:none;
@@ -77,60 +79,30 @@ button {
 
 <div id="hud">
 ❤️ <span id="vida">3</span> |
-⏳ <span id="cd">Pronto</span> |
 🏆 <span id="score">0</span>
-<br>
-<button onclick="abrirLoja()">🛒 Loja</button>
 </div>
 
 <div id="player"></div>
+<div id="boss"></div>
 
 <div id="controls">
 <button onclick="moveLeft()">⬅️</button>
-<button onclick="dominio()" id="btnDom">⚡</button>
 <button onclick="moveRight()">➡️</button>
-</div>
-
-<div id="loja">
-<h2>🛒 Loja</h2>
-
-<p>🧍 Skin Azul - 50</p>
-<button onclick="comprarSkin('blue',50)">Comprar</button>
-
-<p>🔥 Skin Vermelha - 100</p>
-<button onclick="comprarSkin('red',100)">Comprar</button>
-
-<p>⚡ Domínio Forte - 150</p>
-<button onclick="comprarPoder(150)">Comprar</button>
-
-<br>
-<button onclick="fecharLoja()">Fechar</button>
 </div>
 
 <div id="gameover">
 <h1>💀 Game Over</h1>
 <p>Pontos: <span id="finalScore"></span></p>
-<p>Recorde: <span id="record"></span></p>
 <button onclick="location.reload()">Reiniciar</button>
 </div>
 
 <script>
 let player = document.getElementById("player");
+let boss = document.getElementById("boss");
 
 let vida = 3;
 let score = 0;
-let cd = false;
 let gameRunning = true;
-
-/* salvar */
-let skin = localStorage.getItem("skin") || "purple";
-let poderForte = localStorage.getItem("poder") === "true";
-
-/* aplicar skin */
-function aplicarSkin(){
-  player.style.background = skin;
-}
-aplicarSkin();
 
 /* pistas */
 let lanes = [window.innerWidth*0.2, window.innerWidth*0.5, window.innerWidth*0.8];
@@ -141,6 +113,27 @@ function updatePlayer(){
 }
 updatePlayer();
 
+/* boss posição */
+let bossOffset = -150; // começa atrás
+
+function updateBoss(){
+  boss.style.left = lanes[laneIndex] + "px";
+  boss.style.bottom = (80 + bossOffset) + "px";
+}
+
+setInterval(()=>{
+  if(!gameRunning) return;
+
+  bossOffset += 0.5; // boss vai chegando
+  updateBoss();
+
+  if(bossOffset >= 0){
+    gameOver();
+  }
+
+}, 100);
+
+/* movimento */
 function moveLeft(){ if(!gameRunning) return; if(laneIndex>0) laneIndex--; updatePlayer(); }
 function moveRight(){ if(!gameRunning) return; if(laneIndex<2) laneIndex++; updatePlayer(); }
 
@@ -178,6 +171,9 @@ setInterval(()=>{
     if(top > window.innerHeight - 140 && lane === laneIndex){
       vida--;
       document.getElementById("vida").innerText = vida;
+
+      bossOffset += 20; // punição: boss aproxima
+
       o.remove();
       clearInterval(fall);
 
@@ -193,74 +189,12 @@ setInterval(()=>{
 
 },1000);
 
-/* domínio */
-function dominio(){
-  if(cd || !gameRunning) return;
-
-  cd = true;
-  document.getElementById("btnDom").disabled = true;
-
-  document.body.style.background = "purple";
-
-  document.querySelectorAll(".obstaculo").forEach(o=>{
-    if(poderForte) o.style.background="cyan";
-    o.remove();
-  });
-
-  setTimeout(()=>document.body.style.background="black",300);
-
-  let tempo = 30;
-  let cdText = document.getElementById("cd");
-
-  let timer = setInterval(()=>{
-    tempo--;
-    cdText.innerText = tempo+"s";
-
-    if(tempo<=0){
-      clearInterval(timer);
-      cd=false;
-      cdText.innerText="Pronto";
-      document.getElementById("btnDom").disabled=false;
-    }
-  },1000);
-}
-
-/* loja */
-function abrirLoja(){ if(!gameRunning) return; document.getElementById("loja").style.display="block"; }
-function fecharLoja(){ document.getElementById("loja").style.display="none"; }
-
-function comprarSkin(tipo,preco){
-  if(score<preco){ alert("Sem pontos"); return; }
-  score-=preco;
-  skin=tipo;
-  localStorage.setItem("skin",tipo);
-  aplicarSkin();
-  document.getElementById("score").innerText = score;
-}
-
-function comprarPoder(preco){
-  if(score<preco){ alert("Sem pontos"); return; }
-  score-=preco;
-  poderForte=true;
-  localStorage.setItem("poder",true);
-  document.getElementById("score").innerText = score;
-}
-
 /* game over */
 function gameOver(){
   gameRunning = false;
-
   document.getElementById("controls").style.display = "none";
-
   document.getElementById("gameover").style.display="block";
   document.getElementById("finalScore").innerText=score;
-
-  let record = localStorage.getItem("record") || 0;
-  if(score>record){
-    localStorage.setItem("record",score);
-    record=score;
-  }
-  document.getElementById("record").innerText=record;
 }
 </script>
 

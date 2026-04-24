@@ -20,6 +20,7 @@ canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
 let gravity = 0.5;
+let gameOver = false;
 
 // PLAYER
 let player = {
@@ -30,10 +31,16 @@ let player = {
   dx: 0,
   dy: 0,
   speed: 4,
-  jumping: false
+  jumping: false,
+  life: 100
 };
 
-// BOSS (segue o player)
+// INVENTÁRIO
+let inventory = {
+  dirt: 0
+};
+
+// BOSS
 let boss = {
   x: 300,
   y: 100,
@@ -42,28 +49,36 @@ let boss = {
   speed: 1.5
 };
 
-// BLOCOS (mundo em grid)
+// BLOCOS
 let blockSize = 40;
 let blocks = [];
 
-for (let x = 0; x < 20; x++) {
-  for (let y = 10; y < 15; y++) {
-    blocks.push({
-      x: x * blockSize,
-      y: y * blockSize,
-      w: blockSize,
-      h: blockSize
-    });
+function generateWorld() {
+  blocks = [];
+  for (let x = 0; x < 20; x++) {
+    for (let y = 10; y < 15; y++) {
+      blocks.push({
+        x: x * blockSize,
+        y: y * blockSize,
+        w: blockSize,
+        h: blockSize,
+        type: "dirt"
+      });
+    }
   }
 }
+
+generateWorld();
 
 // CONTROLES
 let keys = {};
 document.addEventListener("keydown", e => keys[e.key] = true);
 document.addEventListener("keyup", e => keys[e.key] = false);
 
-// QUEBRAR BLOCOS (clique)
+// QUEBRAR BLOCO + DROP
 canvas.addEventListener("click", function(e) {
+  if (gameOver) return;
+
   let rect = canvas.getBoundingClientRect();
   let mouseX = e.clientX - rect.left;
   let mouseY = e.clientY - rect.top;
@@ -74,14 +89,34 @@ canvas.addEventListener("click", function(e) {
     if (mouseX >= b.x && mouseX <= b.x + b.w &&
         mouseY >= b.y && mouseY <= b.y + b.h) {
       
-      blocks.splice(i, 1); // remove bloco
+      // DROP ITEM
+      inventory[b.type]++;
+
+      // REMOVE BLOCO
+      blocks.splice(i, 1);
       break;
     }
   }
 });
 
+// RESTART
+canvas.addEventListener("dblclick", function() {
+  if (gameOver) restartGame();
+});
+
+function restartGame() {
+  player.life = 100;
+  player.x = 100;
+  player.y = 100;
+  inventory.dirt = 0;
+  gameOver = false;
+  generateWorld();
+}
+
 // UPDATE
 function update() {
+  if (gameOver) return;
+
   // Movimento
   if (keys["a"]) player.dx = -player.speed;
   else if (keys["d"]) player.dx = player.speed;
@@ -92,13 +127,12 @@ function update() {
     player.jumping = true;
   }
 
-  // Gravidade
   player.dy += gravity;
 
   player.x += player.dx;
   player.y += player.dy;
 
-  // Colisão com blocos
+  // Colisão
   player.jumping = true;
   blocks.forEach(b => {
     if (player.x < b.x + b.w &&
@@ -118,6 +152,20 @@ function update() {
 
   if (boss.y < player.y) boss.y += boss.speed;
   else boss.y -= boss.speed;
+
+  // DANO
+  if (player.x < boss.x + boss.w &&
+      player.x + player.w > boss.x &&
+      player.y < boss.y + boss.h &&
+      player.y + player.h > boss.y) {
+
+    player.life -= 0.5;
+  }
+
+  // GAME OVER
+  if (player.life <= 0) {
+    gameOver = true;
+  }
 }
 
 // DRAW
@@ -137,6 +185,23 @@ function draw() {
   blocks.forEach(b => {
     ctx.fillRect(b.x, b.y, b.w, b.h);
   });
+
+  // HUD VIDA
+  ctx.fillStyle = "black";
+  ctx.fillText("Vida: " + Math.floor(player.life), 20, 30);
+
+  // INVENTÁRIO
+  ctx.fillText("Terra: " + inventory.dirt, 20, 50);
+
+  // GAME OVER
+  if (gameOver) {
+    ctx.fillStyle = "black";
+    ctx.font = "40px Arial";
+    ctx.fillText("GAME OVER", canvas.width/2 - 120, canvas.height/2);
+
+    ctx.font = "20px Arial";
+    ctx.fillText("Dê dois cliques para reiniciar", canvas.width/2 - 140, canvas.height/2 + 40);
+  }
 }
 
 // LOOP
